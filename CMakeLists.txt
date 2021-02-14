@@ -9,10 +9,10 @@ if(ENABLE_MPI)
 			find_package(MPI REQUIRED) 
 			set( tgt_name mpi)
 			set( tgt_exe_name "ljmd-mpi.x")
-else()			
-			set( tgt_name serial)
-			set( tgt_exe_name "ljmd-serial.x")
 endif()
+
+set( tgt_name serial)
+set( tgt_exe_name "ljmd-serial.x")
 
 #specify target exe name and source
 add_executable(${tgt_name}  src/ljmd.c)

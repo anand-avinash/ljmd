@@ -39,10 +39,20 @@ if [ "$SWITCH" = "mpi" ]; then
 				echo "parallel test with ${NPROCS} processors"
 				run_test "${INPUT_DIR}" "mpirun -np ${NPROCS} ${BINARY}"
 		done
-elif [ -z ${SWITCH} ]; then
+
+fi
+
+if [ "${SWITCH}" = "serial" ]; then
 		echo "serial test"
 		run_test "${INPUT_DIR}" "${BINARY}"
 fi
 
+if [ "${SWITCH}" = "omp_naive" ]; then
+	echo "omp_naive test with default number of threads"
+	run_test "${INPUT_DIR}" "${BINARY}"
+fi
 
-
+if [ "${SWITCH}" = "omp_3rd_law" ]; then
+	echo "omp_3rd_law test with default number of threads"
+	run_test "${INPUT_DIR}" "${BINARY}"
+fi

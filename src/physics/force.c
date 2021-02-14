@@ -70,6 +70,7 @@ void force(mdsys_t *sys) {
 				rinv = 1.0 / rsq;
 				r6 = rinv * rinv * rinv;
 				ffac = (12.0 * c12 * r6 - 6.0 * c6) * r6 * rinv;
+
 				pot_energy += r6 * (c12 * r6 - c6);
 
                                 f1x += rx * ffac;
@@ -82,9 +83,11 @@ void force(mdsys_t *sys) {
                                 #pragma omp critical
                                 {
                                 #endif
+
 				sys->f[j].x -= rx * ffac;
 				sys->f[j].y -= ry * ffac;
 				sys->f[j].z -= rz * ffac;
+
                                 #ifdef _OMP_3RD_LAW
                                 }
                                 #endif

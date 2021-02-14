@@ -52,18 +52,14 @@ set_target_properties(test_common PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ljmd_SOU
 target_include_directories(test_common PRIVATE ${CMAKE_MODULE_PATH}/src)
 target_link_libraries(test_common PRIVATE GTest::GTestMain GTest::GTest ljmd_common_lib)
 add_test(NAME common COMMAND test_common )
-  
 
 # input tests
-if(NOT ENABLE_MPI)
 
 add_executable(test_input ${ljmd_SOURCE_FILES}/io/test_input.cpp)
 set_target_properties(test_input PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ljmd_SOURCE_DIR}/build)
 target_include_directories(test_input PRIVATE ${CMAKE_MODULE_PATH}/src ${ljmd_SOURCE_DIR}/src/io ${ljmd_SOURCE_DIR}/src/common)
 target_link_libraries(test_input PRIVATE GTest::GTestMain GTest::GTest ljmd_io_lib)
 add_test(NAME input COMMAND test_input)
-
-endif()
 
 
 # output tests
@@ -72,6 +68,7 @@ set_target_properties(test_output PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ljmd_SOU
 target_include_directories(test_output PRIVATE ${CMAKE_MODULE_PATH}/src ${ljmd_SOURCE_DIR}/src/io)
 target_link_libraries(test_output PRIVATE GTest::GTestMain GTest::GTest ljmd_io_lib)
 add_test(NAME output COMMAND test_output)
+
 
 # utils tests
 
@@ -82,9 +79,6 @@ target_link_libraries(test_utils PRIVATE GTest::GTestMain GTest::GTest ljmd_phys
 add_test(NAME utils COMMAND test_utils )
 
 
-
-if(NOT ENABLE_MPI)
-
 # force tests
 
 add_executable(test_force ${ljmd_SOURCE_FILES}/physics/test_force.cpp)
@@ -92,9 +86,6 @@ set_target_properties(test_force PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${ljmd_SOUR
 target_include_directories(test_force PRIVATE ${CMAKE_MODULE_PATH}/src ${ljmd_SOURCE_DIR}/src/physics)
 target_link_libraries(test_force PRIVATE GTest::GTestMain GTest::GTest ljmd_phys_lib ljmd_common_lib)
 add_test(NAME force COMMAND test_force )
-
-
-endif()
 
 
 # ekin and temp tests
@@ -123,14 +114,25 @@ find_program(AWK_PROGRAM awk)
 find_program(CMP_PROGRAM cmp)
 if(BASH_PROGRAM AND AWK_PROGRAM AND CMP_PROGRAM)
 	
+    # reference test for ljmd-mpi.x
 	if(ENABLE_MPI)
-		list( APPEND comparison_test_args $<TARGET_FILE:mpi> ${CMAKE_MODULE_PATH} "mpi" )
-	else()
-		list( APPEND comparison_test_args $<TARGET_FILE:serial> ${CMAKE_MODULE_PATH} )
+		list( APPEND comparison_mpi_args $<TARGET_FILE:mpi> ${CMAKE_MODULE_PATH} "mpi" )
+        add_test(NAME comparison_mpi COMMAND ${ljmd_SOURCE_DIR}/tests/compare.sh ${comparison_mpi_args} )
 	endif()
-    add_test(NAME comparison COMMAND ${ljmd_SOURCE_DIR}/tests/compare.sh ${comparison_test_args} )
-endif()
 
+    # reference test for ljmd-serial.x
+    list( APPEND comparison_serial_args $<TARGET_FILE:serial> ${CMAKE_MODULE_PATH} "serial")
+    add_test(NAME comparison_serial COMMAND ${ljmd_SOURCE_DIR}/tests/compare.sh ${comparison_serial_args} )
+
+    # reference test for ljmd_omp_naive.x
+    list(APPEND comparison_omp_naive_args $<TARGET_FILE:omp_naive> ${CMAKE_MODULE_PATH} "omp_naive")
+    add_test(NAME comparison_omp_naive COMMAND ${ljmd_SOURCE_DIR}/tests/compare.sh ${comparison_omp_naive_args} )
+
+    # reference test for ljmd_omp_3rd_law.x
+    list(APPEND comparison_omp_3rdlaw_args $<TARGET_FILE:omp_3rd_law> ${CMAKE_MODULE_PATH} "omp_3rd_law")
+    add_test(NAME comparison_omp_3rd_law COMMAND ${ljmd_SOURCE_DIR}/tests/compare.sh ${comparison_omp_3rdlaw_args} )
+
+endif()
 
 #mpi tests
 
@@ -239,4 +241,3 @@ target_include_directories(test_force_omp_3rd_law PRIVATE ${CMAKE_MODULE_PATH}/s
 find_package(OpenMP REQUIRED)
 target_link_libraries(test_force_omp_3rd_law PRIVATE GTest::GTestMain GTest::GTest ljmd_force_lib_omp_3rd_law ljmd_common_lib OpenMP::OpenMP_CXX)
 add_test(NAME force_omp_3rd_law COMMAND test_force_omp_3rd_law)
-
