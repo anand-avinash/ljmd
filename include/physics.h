@@ -8,6 +8,10 @@
 #include "mpi_headers/mpi_utils.h"
 #endif
 
+#ifdef _OMP_NAIVE
+#include <omp.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

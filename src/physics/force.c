@@ -23,61 +23,84 @@ void force(mdsys_t *sys) {
         int i, j;
 
         /* zero energy and forces */
-        sys->epot = 0.0;
-        double pot_energy;
+        double pot_energy = 0.0;
         azzero(sys->f, sys->natoms);
 
-        double force_x, force_y, force_z;
+        double c12 = 4.0 * sys->epsilon * pow(sys->sigma, 12.0);
+	double c6  = 4.0 * sys->epsilon * pow(sys->sigma,  6.0);
+	double rcsq = sys->rcut * sys->rcut;
+	double r6, rinv;
+	double r1x, r1y, r1z;
+	double f1x, f1y, f1z;
 
 #if defined(MPI_ENABLED)
         for (i = sys->proc_seg->idx;
              i < (sys->proc_seg->idx + sys->proc_seg->size); ++i) {
-                for (j = i + 1; j < (sys->natoms); ++j) {
 #else
+        #ifdef _OMP_NAIVE
+        #pragma omp parallel for default(shared) private(i, j, rx, ry, rz, rsq, ffac, r1x, r1y, r1z, f1x, f1y, f1z, rinv, r6) reduction(+:pot_energy)
+        #endif
         for (i = 0; i < (sys->natoms); ++i) {
-                for (j = 0; j < (sys->natoms); ++j) {
+#endif
 
+                r1x = sys->r[i].x;
+		r1y = sys->r[i].y;
+		r1z = sys->r[i].z;
+                f1x = 0.0;
+		f1y = 0.0;
+		f1z = 0.0;
+
+                #ifdef _OMP_NAIVE
+                for (j = 0; j < (sys->natoms); ++j) {
                         /* particles have no interactions with themselves */
                         if (i == j)
                                 continue;
-
-#endif
-
+                #else
+                for (j = i+1; j < (sys->natoms); ++j) {
+                #endif
+                        
                         /* get distance between particle i and j */
-                        rx = pbc(sys->r[i].x - sys->r[j].x, 0.5 * sys->box);
-                        ry = pbc(sys->r[i].y - sys->r[j].y, 0.5 * sys->box);
-                        rz = pbc(sys->r[i].z - sys->r[j].z, 0.5 * sys->box);
-                        rsq = sqrt(rx * rx + ry * ry + rz * rz);
+                        rx = pbc(r1x - sys->r[j].x, 0.5 * sys->box);
+                        ry = pbc(r1y - sys->r[j].y, 0.5 * sys->box);
+                        rz = pbc(r1z - sys->r[j].z, 0.5 * sys->box);
+                        rsq = rx * rx + ry * ry + rz * rz;
 
                         /* compute force and energy if within cutoff */
-                        if (rsq < sys->rcut) {
-                                ffac =
-                                    -4.0 * sys->epsilon *
-                                    (-12.0 * pow(sys->sigma / rsq, 12.0) / rsq +
-                                     6 * pow(sys->sigma / rsq, 6.0) / rsq);
+                        if (rsq < rcsq) {
+				rinv = 1.0 / rsq;
+				r6 = rinv * rinv * rinv;
+				ffac = (12.0 * c12 * r6 - 6.0 * c6) * r6 * rinv;
+				pot_energy += r6 * (c12 * r6 - c6);
 
-                                pot_energy = 4.0 * sys->epsilon *
-                                             (pow(sys->sigma / rsq, 12.0) -
-                                              pow(sys->sigma / rsq, 6.0));
+                                f1x += rx * ffac;
+                                f1y += ry * ffac;
+                                f1z += rz * ffac;
 
-#if !defined(MPI_ENABLED)
-                                pot_energy /= 2;
-#endif
-                                sys->epot += pot_energy;
+                                #ifndef _OMP_NAIVE
 
-                                force_x = rx / rsq * ffac;
-                                force_y = ry / rsq * ffac;
-                                force_z = rz / rsq * ffac;
+                                #ifdef _OMP_3RD_LAW
+                                #pragma omp critical
+                                {
+                                #endif
+				sys->f[j].x -= rx * ffac;
+				sys->f[j].y -= ry * ffac;
+				sys->f[j].z -= rz * ffac;
+                                #ifdef _OMP_3RD_LAW
+                                }
+                                #endif
 
-                                sys->f[i].x += force_x;
-                                sys->f[i].y += force_y;
-                                sys->f[i].z += force_z;
-#if defined(MPI_ENABLED)
-                                sys->f[j].x -= force_x;
-                                sys->f[j].y -= force_y;
-                                sys->f[j].z -= force_z;
-#endif
+                                #endif
                         }
+                        
                 }
+		sys->f[i].x += f1x;
+		sys->f[i].y += f1y;
+		sys->f[i].z += f1z;
         }
+
+        sys->epot = pot_energy;
+
+        #if defined(_OMP_NAIVE)
+        sys->epot *= 0.5;
+        #endif
 }

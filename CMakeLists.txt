@@ -93,5 +93,34 @@ endif()
 
 
 
+##########################
+# _OMP_NAIVE
+##########################
 
+#specify target exe name and source
+add_executable(omp_naive src/ljmd.c)
+set_target_properties(omp_naive PROPERTIES OUTPUT_NAME "ljmd_omp_naive.x")
 
+#link libraries and the lib source files
+find_package(OpenMP REQUIRED)
+target_link_libraries(omp_naive PRIVATE ljmd_phys_lib_omp_naive ljmd_force_lib_omp_naive	ljmd_io_lib ljmd_common_lib OpenMP::OpenMP_C)
+
+#compile options
+target_compile_options (omp_naive PRIVATE ${main_flags})
+target_compile_definitions(omp_naive PRIVATE LJMD_VERSION=1.0 _OMP_NAIVE)
+
+##########################
+# _OMP_3RD_LAW
+##########################
+
+#specify target exe name and source
+add_executable(omp_3rd_law src/ljmd.c)
+set_target_properties(omp_3rd_law PROPERTIES OUTPUT_NAME "ljmd_omp_3rd_law.x")
+
+#link libraries and the lib source files
+find_package(OpenMP REQUIRED)
+target_link_libraries(omp_3rd_law PRIVATE ljmd_phys_lib_omp_naive ljmd_force_lib_omp_3rd_law	ljmd_io_lib ljmd_common_lib OpenMP::OpenMP_C)
+
+#compile options
+target_compile_options (omp_3rd_law PRIVATE ${main_flags})
+target_compile_definitions(omp_3rd_law PRIVATE LJMD_VERSION=1.0 _OMP_NAIVE)
