@@ -50,15 +50,15 @@ void force(mdsys_t *sys) {
 		f1y = 0.0;
 		f1z = 0.0;
 
-                #ifdef _OMP_NAIVE
+#ifdef _OMP_NAIVE
                 for (j = 0; j < (sys->natoms); ++j) {
                         /* particles have no interactions with themselves */
                         if (i == j)
                                 continue;
-                #else
-                for (j = i+1; j < (sys->natoms); ++j) {
-                #endif
-                        
+#else
+                for (j = i + 1; j < (sys->natoms); ++j) {
+#endif
+
                         /* get distance between particle i and j */
                         rx = pbc(r1x - sys->r[j].x, 0.5 * sys->box);
                         ry = pbc(r1y - sys->r[j].y, 0.5 * sys->box);
@@ -67,34 +67,32 @@ void force(mdsys_t *sys) {
 
                         /* compute force and energy if within cutoff */
                         if (rsq < rcsq) {
+
 				rinv = 1.0 / rsq;
 				r6 = rinv * rinv * rinv;
 				ffac = (12.0 * c12 * r6 - 6.0 * c6) * r6 * rinv;
-
 				pot_energy += r6 * (c12 * r6 - c6);
+
 
                                 f1x += rx * ffac;
                                 f1y += ry * ffac;
                                 f1z += rz * ffac;
 
-                                #ifndef _OMP_NAIVE
+#ifndef _OMP_NAIVE
 
-                                #ifdef _OMP_3RD_LAW
-                                #pragma omp critical
+#ifdef _OMP_3RD_LAW
+#pragma omp critical
                                 {
-                                #endif
-
-				sys->f[j].x -= rx * ffac;
-				sys->f[j].y -= ry * ffac;
-				sys->f[j].z -= rz * ffac;
-
-                                #ifdef _OMP_3RD_LAW
+#endif
+                                        sys->f[j].x -= rx * ffac;
+                                        sys->f[j].y -= ry * ffac;
+                                        sys->f[j].z -= rz * ffac;
+#ifdef _OMP_3RD_LAW
                                 }
-                                #endif
+#endif
 
-                                #endif
+#endif
                         }
-                        
                 }
 		sys->f[i].x += f1x;
 		sys->f[i].y += f1y;
@@ -103,7 +101,7 @@ void force(mdsys_t *sys) {
 
         sys->epot = pot_energy;
 
-        #if defined(_OMP_NAIVE)
+#ifdef _OMP_NAIVE
         sys->epot *= 0.5;
-        #endif
+#endif
 }

@@ -24,13 +24,21 @@ TEST(pbc_test, outside) {
 TEST(MPIForceTestSingle, single) {
         mdsys_t *sys = new mdsys_t;
         sys->natoms = 1;
+        sys->box = 10.0;
+        sys->epsilon = 1;
+        sys->sigma = 1;
+        sys->rcut = 0;
+
+        sys->r = new vec3_t[1]();
+        sys->f = new vec3_t[1];
 
         arr_seg_t proc_seg;
-        sys->proc_seg = &proc_seg;
+
         proc_seg.size = sys->natoms;
         proc_seg.idx = 0;
+        sys->proc_seg = &proc_seg;
 
-        sys->f = new vec3_t[1];
+        ASSERT_TRUE(sys->proc_seg);
 
         force(sys);
 
@@ -39,7 +47,10 @@ TEST(MPIForceTestSingle, single) {
         ASSERT_EQ(sys->f[0].z, 0.0);
         ASSERT_DOUBLE_EQ(sys->epot, 0.0);
 
+
         delete[] sys->f;
+        delete[] sys->r;
+
 
         sys->proc_seg = nullptr;
 

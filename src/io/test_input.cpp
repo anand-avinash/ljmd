@@ -107,5 +107,4 @@ TEST(test_input, initialise) {
   free(sys.r);
   free(sys.v);
   free(sys.f);
-
 }

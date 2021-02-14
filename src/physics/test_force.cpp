@@ -20,8 +20,16 @@ TEST(ForceTestSingle, single) {
         mdsys_t *sys = new mdsys_t;
         sys->natoms = 1;
 
+#if defined(MPI_ENABLED)
+        arr_seg_t proc_seg;
+        sys->proc_seg = &proc_seg;
+        proc_seg.size = sys->natoms;
+        proc_seg.idx = 0;
+#endif
+
         sys->f = new vec3_t[1];
         sys->r = new vec3_t[1];
+
 
         force(sys);
 

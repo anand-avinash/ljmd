@@ -3,16 +3,22 @@ cmake_minimum_required(VERSION 3.10)
 # set the project name and version
 project(ljmd VERSION 1.1 LANGUAGES C)
 
-
+set( exe_name "ljmd.x" )
 
 if(ENABLE_MPI)
 			find_package(MPI REQUIRED) 
 			set( tgt_name mpi)
-			set( tgt_exe_name "ljmd-mpi.x")
+			set( tgt_exe_name ${exe_name} )
+elseif(ENABLE_OMP)
+			find_package(OpenMP REQUIRED)
+			set( tgt_name omp_3rd_law)
+			set( tgt_exe_name ${exe_name} )
+else()			
+			set( tgt_name serial)
+			set( tgt_exe_name ${exe_name} )
 endif()
 
-set( tgt_name serial)
-set( tgt_exe_name "ljmd-serial.x")
+
 
 #specify target exe name and source
 add_executable(${tgt_name}  src/ljmd.c)
@@ -68,8 +74,12 @@ if(ENABLE_MPI)
 					ljmd_mpi_util_lib
 					ljmd_mpi_comm_lib
 					)
+elseif(ENABLE_OMP)
+
+	target_link_libraries(${tgt_name} PRIVATE  OpenMP::OpenMP_C)
 
 endif()
+
 
 
 
@@ -85,7 +95,10 @@ message("-- ljmd main compiler flags are: ${LJMD_COMPILE_OPT}")
 target_compile_definitions(${tgt_name}  PRIVATE LJMD_VERSION=1.0)
 if(ENABLE_MPI)
 	target_compile_definitions(${tgt_name}  PRIVATE MPI_ENABLED=1)
+elseif(ENABLE_OMP)
+	target_compile_definitions(${tgt_name}  PRIVATE _OMP_NAIVE _OMP_3RD_LAW )
 endif()
+
 if(ENABLE_TIMING)
 	target_compile_definitions(${tgt_name}  PRIVATE TIMING=1)
 endif()
@@ -93,34 +106,7 @@ endif()
 
 
 
-##########################
-# _OMP_NAIVE
-##########################
 
-#specify target exe name and source
-add_executable(omp_naive src/ljmd.c)
-set_target_properties(omp_naive PROPERTIES OUTPUT_NAME "ljmd_omp_naive.x")
 
-#link libraries and the lib source files
-find_package(OpenMP REQUIRED)
-target_link_libraries(omp_naive PRIVATE ljmd_phys_lib_omp_naive ljmd_force_lib_omp_naive	ljmd_io_lib ljmd_common_lib OpenMP::OpenMP_C)
 
-#compile options
-target_compile_options (omp_naive PRIVATE ${main_flags})
-target_compile_definitions(omp_naive PRIVATE LJMD_VERSION=1.0 _OMP_NAIVE)
 
-##########################
-# _OMP_3RD_LAW
-##########################
-
-#specify target exe name and source
-add_executable(omp_3rd_law src/ljmd.c)
-set_target_properties(omp_3rd_law PROPERTIES OUTPUT_NAME "ljmd_omp_3rd_law.x")
-
-#link libraries and the lib source files
-find_package(OpenMP REQUIRED)
-target_link_libraries(omp_3rd_law PRIVATE ljmd_phys_lib_omp_naive ljmd_force_lib_omp_3rd_law	ljmd_io_lib ljmd_common_lib OpenMP::OpenMP_C)
-
-#compile options
-target_compile_options (omp_3rd_law PRIVATE ${main_flags})
-target_compile_definitions(omp_3rd_law PRIVATE LJMD_VERSION=1.0 _OMP_NAIVE)
